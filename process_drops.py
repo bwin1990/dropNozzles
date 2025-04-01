@@ -440,11 +440,20 @@ def auto_cal_flaw_340k(df):
             total_out_of_range = out_of_range_count_a + out_of_range_count_b
             root = tk.Tk()
             root.withdraw()
+            
+            # 创建更醒目的警告信息
+            out_of_range_indices_a = [i for i, x in enumerate(nozzles_a) if x == "out of range"]
+            out_of_range_indices_b = [i for i, x in enumerate(nozzles_b) if x == "out of range"]
+            
+            warning_message = f"⚠️ 警告: 检测到 {total_out_of_range} 个喷嘴超出范围! ⚠️\n\n"
+            warning_message += f"处理340K数据时发现 'out of range' 喷嘴位置。\n"
+            warning_message += f"A组超出范围: {out_of_range_count_a}个, 位置索引: {out_of_range_indices_a}\n"
+            warning_message += f"B组超出范围: {out_of_range_count_b}个, 位置索引: {out_of_range_indices_b}\n\n"
+            warning_message += "这些位置将保留在最终结果中，标记为'out of range'。"
+            
             messagebox.showwarning(
-                "Out of Range Warning", 
-                f"Detected {total_out_of_range} nozzles out of range in 340K processing.\n"
-                f"Cluster A: {out_of_range_count_a} out of range\n"
-                f"Cluster B: {out_of_range_count_b} out of range"
+                "⚠️ OUT OF RANGE WARNING ⚠️", 
+                warning_message
             )
             root.destroy()
         
