@@ -448,8 +448,8 @@ def auto_cal_flaw_340k(df):
             )
             root.destroy()
         
-        # Combine results and filter out "out of range"
-        result = [x for x in nozzles_a + nozzles_b if x != "out of range"]
+        # 不过滤"out of range"，直接返回所有结果
+        result = nozzles_a + nozzles_b
         return result
     
     except Exception as e:
@@ -486,18 +486,21 @@ def auto_cal_flaw_680k(df):
         if out_of_range_count > 0:
             root = tk.Tk()
             root.withdraw()
+            # 创建更醒目的警告信息
+            out_of_range_indices = [i for i, x in enumerate(result) if x == "out of range"]
+            warning_message = f"⚠️ 警告: 检测到 {out_of_range_count} 个喷嘴超出范围! ⚠️\n\n"
+            warning_message += f"处理680K数据时发现 'out of range' 喷嘴位置。\n"
+            warning_message += f"超出范围的位置索引: {out_of_range_indices}\n\n"
+            warning_message += "这些位置将保留在最终结果中，标记为'out of range'。"
+            
             messagebox.showwarning(
-                "Out of Range Warning", 
-                f"Detected {out_of_range_count} nozzles out of range in 680K processing."
+                "⚠️ OUT OF RANGE WARNING ⚠️", 
+                warning_message
             )
             root.destroy()
         
-        # Filter out "out of range"
-        filtered_result = [x for x in result if x != "out of range"]
-        print(f"Final result after filtering: {filtered_result}")
-        print(f"--- End 680K Processing Debug Info ---\n")
-        
-        return filtered_result
+        # 不过滤"out of range"
+        return result
     
     except Exception as e:
         print(f"Error in auto_cal_flaw_680k: {e}")
@@ -572,6 +575,16 @@ def main():
                 print(method_msg)
                 log_message += method_msg + "\n"
                 flaws = auto_cal_flaw_680k(data)
+                
+                # 记录原始结果（包括out of range）
+                raw_result = find_nozzle_680k(rotate_to_vertical(data)['X'].values, 636)
+                out_of_range_count = raw_result.count("out of range")
+                if out_of_range_count > 0:
+                    out_of_range_indices = [i for i, x in enumerate(raw_result) if x == "out of range"]
+                    out_of_range_msg = f"\n⚠️ 警告: 在{label}中检测到 {out_of_range_count} 个'out of range'喷嘴!\n"
+                    out_of_range_msg += f"超出范围的位置索引: {out_of_range_indices}\n"
+                    print(out_of_range_msg)
+                    log_message += out_of_range_msg
             else:
                 method_msg = f"Unknown capacity: {capacity_num}, defaulting to 340K processing"
                 print(method_msg)
@@ -589,16 +602,28 @@ def main():
                 print(result_msg)
                 log_message += result_msg + "\n"
         
-        # Remove duplicates and sort
-        total_flaw_list = sorted(list(set([x for x in flaw_lists if x != "out of range"])))
-        
         # Final summary message
         summary_msg = f"\n{'='*50}\nFINAL RESULTS\n{'='*50}"
         print(summary_msg)
         log_message += summary_msg + "\n"
         
-        summary_message = f"\nTotal Flaws Found: {len(total_flaw_list)}\n"
-        summary_message += f"Total Flaw List: {total_flaw_list}\n"
+        # 检查是否有"out of range"数据点，但不过滤掉
+        total_out_of_range = sum(1 for x in flaw_lists if x == "out of range")
+        if total_out_of_range > 0:
+            out_of_range_summary = f"\n检测到 {total_out_of_range} 个'out of range'喷嘴位置\n"
+            print(out_of_range_summary)
+            log_message += out_of_range_summary
+        
+        # 不过滤"out of range"，保留所有结果，但分开处理不同类型的元素
+        # 将整数和字符串分开处理，避免排序错误
+        int_values = [x for x in flaw_lists if isinstance(x, int)]
+        str_values = [x for x in flaw_lists if isinstance(x, str)]
+        
+        # 对整数部分排序，然后添加字符串部分
+        total_flaw_list = sorted(list(set(int_values))) + list(set(str_values))
+        
+        summary_message = f"\nTotal Items Found: {len(total_flaw_list)}\n"
+        summary_message += f"Total List: {total_flaw_list}\n"
         print(summary_message)
         log_message += summary_message
         
@@ -618,7 +643,7 @@ def main():
         root.destroy()
         
         if save_confirm:
-            # Save results to file - only include the list of flawed nozzle numbers
+            # 简化输出文件，只包含计算孔序号和out of range
             with open(output_file, 'w') as f:
                 f.write(", ".join(map(str, total_flaw_list)))
             
