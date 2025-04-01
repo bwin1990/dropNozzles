@@ -294,6 +294,22 @@ def auto_cal_flaw_340k(df):
         nozzles_a = find_nozzle_340k(tf['a']['X'].values, index[0])
         nozzles_b = find_nozzle_340k(tf['b']['X'].values, index[1])
         
+        # Check for "out of range" values and show warning
+        out_of_range_count_a = nozzles_a.count("out of range")
+        out_of_range_count_b = nozzles_b.count("out of range")
+        
+        if out_of_range_count_a > 0 or out_of_range_count_b > 0:
+            total_out_of_range = out_of_range_count_a + out_of_range_count_b
+            root = tk.Tk()
+            root.withdraw()
+            messagebox.showwarning(
+                "Out of Range Warning", 
+                f"Detected {total_out_of_range} nozzles out of range in 340K processing.\n"
+                f"Cluster A: {out_of_range_count_a} out of range\n"
+                f"Cluster B: {out_of_range_count_b} out of range"
+            )
+            root.destroy()
+        
         # Combine results and filter out "out of range"
         result = [x for x in nozzles_a + nozzles_b if x != "out of range"]
         return result
@@ -316,6 +332,17 @@ def auto_cal_flaw_680k(df):
         
         # Find nozzles (fixed at 636 nozzles)
         result = find_nozzle_680k(new_df['X'].values, 636)
+        
+        # Check for "out of range" values and show warning
+        out_of_range_count = result.count("out of range")
+        if out_of_range_count > 0:
+            root = tk.Tk()
+            root.withdraw()
+            messagebox.showwarning(
+                "Out of Range Warning", 
+                f"Detected {out_of_range_count} nozzles out of range in 680K processing."
+            )
+            root.destroy()
         
         # Filter out "out of range"
         result = [x for x in result if x != "out of range"]
